@@ -1,0 +1,30 @@
+{
+  "name": "artyoms-rss-reader",
+  "version": "1.0.0",
+  "description": "study project for hexlet",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vinnityom/project-lvl3-s452.git"
+  },
+  "keywords": [
+    "rss",
+    "web",
+    "rssreader"
+  ],
+  "author": "Artyom Sukharev",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/vinnityom/project-lvl3-s452/issues"
+  },
+  "homepage": "https://github.com/vinnityom/project-lvl3-s452#readme",
+  "devDependencies": {
+    "@babel/cli": "^7.4.3",
+    "@babel/core": "^7.4.3",
+    "@babel/node": "^7.2.2",
+    "@babel/preset-env": "^7.4.3",
+    "babel-jest": "^24.7.1"
+  }
+}
