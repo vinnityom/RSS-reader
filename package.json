@@ -27,7 +27,6 @@
     "@babel/core": "^7.4.3",
     "@babel/node": "^7.2.2",
     "@babel/preset-env": "^7.4.3",
-    "axios": "^0.18.0",
     "babel-eslint": "^10.0.1",
     "babel-jest": "^24.7.1",
     "babel-loader": "^8.0.5",
@@ -43,6 +42,7 @@
     "webpack-dev-server": "^3.3.1"
   },
   "dependencies": {
+    "axios": "^0.18.0",
     "bootstrap": "^4.3.1",
     "jquery": "^3.4.0",
     "melanke-watchjs": "^1.5.0",
