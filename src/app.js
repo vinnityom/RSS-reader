@@ -12,6 +12,7 @@ export default () => {
     feedLinks: [],
     previousActiveModal: null,
     currentActiveModal: null,
+    renderType: null,
   };
 
   const input = document.querySelector('input');
@@ -50,7 +51,14 @@ export default () => {
         const parser = new DOMParser();
         const feed = parser.parseFromString(response.data, 'application/xml');
         const channelName = feed.querySelector('channel > title').textContent;
-        state.channels = { ...state.channels, [channelName]: feed };
+        const description = feed.querySelector('description');
+        const feedItems = [...feed.querySelectorAll('item')].map(item => ({
+          title: item.querySelector('title').textContent,
+          itemDescription: item.querySelector('description').textContent,
+          link: item.querySelector('link').textContent,
+        }));
+        state.channels = { ...state.channels, [channelName]: { feedItems, description } };
+        state.renderType = 'listInit';
       });
   });
 
@@ -94,41 +102,42 @@ export default () => {
 
   watch(state, 'channels', () => {
     input.value = '';
-
     const feedUl = document.getElementById('feed') || utils.createFeedUl();
+    const methods = {
+      listInit: {
+        getChannel: (channelName, feed) => {
+          if (document.getElementById(channelName)) {
+            return null;
+          }
+          const channel = utils.createChannel(channelName, feed);
+          feedUl.prepend(channel);
+          return channel;
+        },
+        getFeedList: (channelName) => {
+          const feedList = document.createElement('ul');
+          feedList.classList.add('list-group');
+          document.getElementById(channelName).append(feedList);
+          return feedList;
+        },
+        insert: (parent, child) => parent.append(child),
+      },
+      listUpdate: {
+        getChannel: channelName => document.getElementById(channelName),
+        getFeedList: channelName => document.getElementById(channelName).querySelector('ul'),
+        insert: (parent, child) => parent.prepend(child),
+      },
+    };
 
     _.keys(state.channels).forEach((channelName) => {
-      if (document.getElementById(channelName)) {
-        return;
-      }
-
-      const channelNameNode = document.createTextNode(channelName);
-      const pEl = document.createElement('p');
-      pEl.append(channelNameNode);
-      pEl.append(document.createElement('br'));
-
-
       const feed = state.channels[channelName];
-      const description = feed.querySelector('description').textContent;
-      const descriptionTextNode = document.createTextNode(description);
-      const smallTextElement = document.createElement('small');
-      smallTextElement.append(descriptionTextNode);
-      pEl.append(smallTextElement);
+      methods[state.renderType].getChannel(channelName, feed);
 
-      const channelLi = document.createElement('li');
-      channelLi.append(pEl);
-      channelLi.classList.add('list-group-item');
-      channelLi.id = channelName;
+      const feedList = methods[state.renderType].getFeedList(channelName);
 
-      const feedList = document.createElement('ul');
-      feedList.classList.add('list-group');
-
-      const feedItems = feed.querySelectorAll('item');
-      [...feedItems].forEach((i) => {
-        const title = i.querySelector('title').textContent;
-        const link = i.querySelector('link').textContent;
-        const itemDescription = i.querySelector('description').textContent;
-
+      feed.feedItems.forEach(({ title, link, itemDescription }) => {
+        if (document.getElementById(title)) {
+          return;
+        }
         const aEl = document.createElement('a');
         aEl.href = link;
         aEl.append(document.createTextNode(title));
@@ -159,11 +168,9 @@ export default () => {
         li.classList.add('list-group-item');
         li.append(row);
         li.append(modal);
-        feedList.append(li);
+        li.id = title;
+        methods[state.renderType].insert(feedList, li);
       });
-
-      channelLi.append(feedList);
-      feedUl.prepend(channelLi);
     });
   });
 
@@ -192,4 +199,36 @@ export default () => {
     document.querySelector('.modal-backdrop').remove();
     document.body.classList.remove('modal-open');
   });
+
+  const checkForUpdates = () => {
+    state.feedLinks.forEach((link) => {
+      axios(`https://cors-anywhere.herokuapp.com/${link}`)
+        .then((response) => {
+          const parser = new DOMParser();
+          const feed = parser.parseFromString(response.data, 'application/xml');
+          const channelName = feed.querySelector('channel > title').textContent;
+          const newFeedItems = [...feed.querySelectorAll('item')]
+            .filter((item) => {
+              const title = item.querySelector('title').textContent;
+              const oldItems = state.channels[channelName].feedItems;
+              const newItem = _.find(oldItems, i => title === i.title);
+              return !newItem;
+            });
+
+          if (newFeedItems.length > 0) {
+            newFeedItems.forEach((item) => {
+              const processedItem = {
+                title: item.querySelector('title').textContent,
+                itemDescription: item.querySelector('description').textContent,
+                link: item.querySelector('link').textContent,
+              };
+              state.channels[channelName].feedItems.push(processedItem);
+            });
+            state.renderType = 'listUpdate';
+          }
+        });
+    });
+  };
+
+  setInterval(checkForUpdates, 5000);
 };

@@ -47,7 +47,7 @@ export const createDescriptionButton = (modalId) => {
   const button = document.createElement('button');
   button.classList.add('btn', 'btn-primary', 'btn-sm');
   button.dataset.toggle = 'modal';
-  button.dataset.target = `#${modalId}`;
+  button.dataset.target = `#${modalId}Modal`;
   const textNode = document.createTextNode('description');
   button.append(textNode);
 
@@ -90,11 +90,30 @@ export const createModalElement = (title, description) => {
 
   const modal = document.createElement('div');
   modal.classList.add('modal', 'fade');
-  modal.id = title;
+  modal.id = `${title}Modal`;
   modal.setAttribute('tab-index', '-1');
   modal.setAttribute('aria-labelledby', `${title}Label`);
   modal.setAttribute('aria-hidden', 'true');
   modal.append(modalDialog);
 
   return modal;
+};
+
+export const createChannel = (name, feed) => {
+  const channelNameNode = document.createTextNode(name);
+  const pEl = document.createElement('p');
+  pEl.append(channelNameNode);
+  pEl.append(document.createElement('br'));
+
+  const descriptionTextNode = document.createTextNode(feed.description.textContent);
+  const smallTextElement = document.createElement('small');
+  smallTextElement.append(descriptionTextNode);
+  pEl.append(smallTextElement);
+
+  const channelLi = document.createElement('li');
+  channelLi.append(pEl);
+  channelLi.classList.add('list-group-item');
+  channelLi.id = name;
+
+  return channelLi;
 };
