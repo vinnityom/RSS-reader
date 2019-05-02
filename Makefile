@@ -6,3 +6,7 @@ lint:
 
 dev-server:
 	npm run start:dev
+
+deploy:
+	npm run build
+	surge dist/
