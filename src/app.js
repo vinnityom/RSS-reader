@@ -10,6 +10,8 @@ export default () => {
     urlStatus: 'init',
     channels: {},
     feedLinks: [],
+    previousActiveModal: null,
+    currentActiveModal: null,
   };
 
   const input = document.querySelector('input');
@@ -125,18 +127,69 @@ export default () => {
       [...feedItems].forEach((i) => {
         const title = i.querySelector('title').textContent;
         const link = i.querySelector('link').textContent;
-        const li = document.createElement('li');
-        li.classList.add('list-group-item');
+        const itemDescription = i.querySelector('description').textContent;
 
         const aEl = document.createElement('a');
         aEl.href = link;
         aEl.append(document.createTextNode(title));
-        li.append(aEl);
+        const aCol = document.createElement('div');
+        aCol.classList.add('col');
+        aCol.append(aEl);
+
+        const modal = utils.createModalElement(title, itemDescription);
+        modal.querySelector('.close').addEventListener('click', () => {
+          state.previousActiveModal = state.currentActiveModal;
+          state.currentActiveModal = null;
+        });
+
+        const descriptionButton = utils.createDescriptionButton(title, state);
+        descriptionButton.addEventListener('click', ({ target }) => {
+          state.currentActiveModal = target.dataset.target;
+        });
+
+        const descriptionButtonCol = document.createElement('div');
+        descriptionButtonCol.classList.add('col-sm-2');
+        descriptionButtonCol.append(descriptionButton);
+
+        const row = document.createElement('div');
+        row.classList.add('row', 'container-fluid');
+        row.append(aCol);
+        row.append(descriptionButtonCol);
+        const li = document.createElement('li');
+        li.classList.add('list-group-item');
+        li.append(row);
+        li.append(modal);
         feedList.append(li);
       });
 
       channelLi.append(feedList);
       feedUl.prepend(channelLi);
     });
+  });
+
+  watch(state, 'currentActiveModal', () => {
+    if (!state.currentActiveModal) {
+      return;
+    }
+    const modalToShow = document.getElementById(state.currentActiveModal.slice(1));
+    modalToShow.classList.add('show');
+    modalToShow.removeAttribute('aria-hidden');
+    modalToShow.setAttribute('style', 'display: block');
+
+    const modalBackdrop = document.createElement('div');
+    modalBackdrop.classList.add('modal-backdrop', 'fade', 'show');
+
+    document.body.classList.add('modal-open');
+    document.body.append(modalBackdrop);
+  });
+
+  watch(state, 'previousActiveModal', () => {
+    const modalToClose = document.getElementById(state.previousActiveModal.slice(1));
+    modalToClose.classList.remove('show');
+    modalToClose.setAttribute('aria-hidden', 'true');
+    modalToClose.removeAttribute('style');
+
+    document.querySelector('.modal-backdrop').remove();
+    document.body.classList.remove('modal-open');
   });
 };
