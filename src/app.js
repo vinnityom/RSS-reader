@@ -31,10 +31,10 @@ export default () => {
       return;
     }
     const currentURL = input.value;
-
     if (state.feedLinks.includes(currentURL)) {
       state.urlStatus = 'init';
       state.alert = 'URLDouble';
+      input.select();
       return;
     }
 
@@ -101,7 +101,7 @@ export default () => {
   });
 
   watch(state, 'channels', () => {
-    input.value = '';
+//    input.value = '';
     const feedUl = document.getElementById('feed') || utils.createFeedUl();
     const methods = {
       listInit: {
@@ -120,14 +120,19 @@ export default () => {
           return feedList;
         },
         insert: (parent, child) => parent.append(child),
+        updateInput: () => {
+          input.value = '';
+        },
       },
       listUpdate: {
         getChannel: channelName => document.getElementById(channelName),
         getFeedList: channelName => document.getElementById(channelName).querySelector('ul'),
         insert: (parent, child) => parent.prepend(child),
+        updateInput: () => {},
       },
     };
 
+    methods[state.renderType].updateInput();
     _.keys(state.channels).forEach((channelName) => {
       const feed = state.channels[channelName];
       methods[state.renderType].getChannel(channelName, feed);
@@ -176,6 +181,13 @@ export default () => {
 
   watch(state, 'currentActiveModal', () => {
     if (!state.currentActiveModal) {
+      const modalToClose = document.getElementById(state.previousActiveModal.slice(1));
+      modalToClose.classList.remove('show');
+      modalToClose.setAttribute('aria-hidden', 'true');
+      modalToClose.removeAttribute('style');
+
+      document.querySelector('.modal-backdrop').remove();
+      document.body.classList.remove('modal-open');
       return;
     }
     const modalToShow = document.getElementById(state.currentActiveModal.slice(1));
@@ -188,16 +200,6 @@ export default () => {
 
     document.body.classList.add('modal-open');
     document.body.append(modalBackdrop);
-  });
-
-  watch(state, 'previousActiveModal', () => {
-    const modalToClose = document.getElementById(state.previousActiveModal.slice(1));
-    modalToClose.classList.remove('show');
-    modalToClose.setAttribute('aria-hidden', 'true');
-    modalToClose.removeAttribute('style');
-
-    document.querySelector('.modal-backdrop').remove();
-    document.body.classList.remove('modal-open');
   });
 
   const checkForUpdates = () => {
