@@ -9,4 +9,4 @@ dev-server:
 
 deploy:
 	npm run build
-	surge dist/
+	surge dist/ http://artyoms-rss.surge.sh/
