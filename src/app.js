@@ -38,7 +38,6 @@ export default () => {
       return;
     }
 
-    state.feedLinks.push(currentURL);
     state.alert = 'loading';
 
     axios(`https://cors-anywhere.herokuapp.com/${currentURL}`)
@@ -50,6 +49,13 @@ export default () => {
       .then((response) => {
         const parser = new DOMParser();
         const feed = parser.parseFromString(response.data, 'application/xml');
+        if (!feed.querySelector('rss')) {
+          state.alert = 'notRSS';
+          input.select();
+          return;
+        }
+        state.feedLinks.push(currentURL);
+
         const channelName = feed.querySelector('channel > title').textContent;
         const description = feed.querySelector('description');
         const feedItems = [...feed.querySelectorAll('item')].map(item => ({
@@ -86,6 +92,10 @@ export default () => {
         message: 'Loading RSS-feed',
         className: 'alert-success',
       },
+      notRSS: {
+        message: 'Sorry, but this url is not RSS',
+        className: 'alert-danger',
+      },
     };
 
     const alert = utils.makeAlert(types[state.alert]);
@@ -101,7 +111,6 @@ export default () => {
   });
 
   watch(state, 'channels', () => {
-//    input.value = '';
     const feedUl = document.getElementById('feed') || utils.createFeedUl();
     const methods = {
       listInit: {

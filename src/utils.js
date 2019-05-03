@@ -57,7 +57,7 @@ export const createDescriptionButton = (modalId) => {
 export const createModalElement = (title, description) => {
   const modalBody = document.createElement('div');
   modalBody.classList.add('modal-body');
-  modalBody.append(document.createTextNode(description));
+  modalBody.innerHTML = description;
 
   const span = document.createElement('span');
   span.setAttribute('aria-hidden', 'true');
