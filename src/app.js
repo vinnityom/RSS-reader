@@ -19,18 +19,29 @@ export default () => {
   const button = document.getElementById('searchButton');
 
   input.addEventListener('input', ({ target: { value } }) => {
-    if (value === '') {
-      state.urlStatus = 'init';
-      state.alert = null;
-    } else {
-      state.urlStatus = validator.isURL(value) ? 'valid' : 'invalid';
-    }
+    const statusDispatch = [
+      {
+        check: inputValue => inputValue === '',
+        currentStatus: 'init',
+      },
+      {
+        check: inputValue => validator.isURL(inputValue),
+        currentStatus: 'valid',
+      },
+      {
+        check: inputValue => !validator.isURL(inputValue),
+        currentStatus: 'invalid',
+      },
+    ];
+
+    state.urlStatus = _.find(statusDispatch, element => element.check(value)).currentStatus;
   });
 
   button.addEventListener('click', () => {
     if (state.urlStatus !== 'valid') {
       return;
     }
+
     const currentURL = input.value;
     if (state.feedLinks.includes(currentURL)) {
       state.urlStatus = 'init';
@@ -49,14 +60,14 @@ export default () => {
       })
       .then((response) => {
         const parser = new DOMParser();
-        const feed = parser.parseFromString(response.data, 'application/xml');
-        if (!feed.querySelector('rss')) {
+        const feed = parser.parseFromString(response.data, 'application/xml').querySelector('rss');
+        if (!feed) {
           state.alert = 'notRSS';
           input.select();
           return;
         }
-        state.feedLinks.push(currentURL);
 
+        state.feedLinks.push(currentURL);
         const channelName = feed.querySelector('channel > title').textContent;
         const description = feed.querySelector('description');
         const feedItems = [...feed.querySelectorAll('item')].map(item => ({
@@ -113,6 +124,7 @@ export default () => {
 
   watch(state, 'channels', () => {
     const feedUl = document.getElementById('feed') || utils.createFeedUl();
+
     const methods = {
       listInit: {
         getChannel: (channelName, feed) => {
@@ -143,6 +155,7 @@ export default () => {
     };
 
     methods[state.renderType].updateInput();
+
     _.keys(state.channels).forEach((channelName) => {
       const feed = state.channels[channelName];
       methods[state.renderType].getChannel(channelName, feed);
