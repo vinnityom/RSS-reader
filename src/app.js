@@ -16,18 +16,19 @@ export default () => {
   };
 
   const input = document.querySelector('input');
-  const button = document.querySelector('button');
+  const button = document.getElementById('searchButton');
 
   input.addEventListener('input', ({ target: { value } }) => {
     if (value === '') {
       state.urlStatus = 'init';
+      state.alert = null;
     } else {
       state.urlStatus = validator.isURL(value) ? 'valid' : 'invalid';
     }
   });
 
   button.addEventListener('click', () => {
-    if (!state.urlStatus === 'valid') {
+    if (state.urlStatus !== 'valid') {
       return;
     }
     const currentURL = input.value;
