@@ -58,6 +58,9 @@ export const createModalElement = (title, description) => {
   const modalBody = document.createElement('div');
   modalBody.classList.add('modal-body');
   modalBody.innerHTML = description;
+  [...modalBody.querySelectorAll('img')].forEach((img) => {
+    img.setAttribute('width', '100%');
+  });
 
   const span = document.createElement('span');
   span.setAttribute('aria-hidden', 'true');
