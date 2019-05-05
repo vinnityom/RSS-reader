@@ -213,6 +213,7 @@ export default () => {
       document.body.classList.remove('modal-open');
       return;
     }
+
     const modalToShow = document.getElementById(state.currentActiveModal.slice(1));
     modalToShow.classList.add('show');
     modalToShow.removeAttribute('aria-hidden');
