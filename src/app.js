@@ -80,9 +80,7 @@ export default () => {
       });
   });
 
-  watch(state, 'urlStatus', () => {
-    utils.processInput(state.urlStatus)(input, button);
-  });
+  watch(state, 'urlStatus', () => utils.processInput(state.urlStatus)(input, button));
 
   watch(state, 'alert', () => {
     const currentAlert = document.getElementById('alert');
