@@ -55,6 +55,7 @@ export default () => {
       .then((response) => {
         const feed = utils.parse(response.data);
         if (!feed) {
+          state.inputStatus = 'init';
           state.alert = 'notRSS';
           return;
         }
@@ -126,17 +127,21 @@ export default () => {
       URLDouble: {
         message: 'Seems like you already have chis channel',
         className: 'alert-danger',
+        processInput: inputField => inputField.select(),
       },
       loading: {
         message: 'Loading RSS-feed',
         className: 'alert-success',
+        processInput: () => {},
       },
       notRSS: {
         message: 'Sorry, but this url is not RSS',
         className: 'alert-danger',
+        processInput: inputField => inputField.select(),
       },
     };
 
+    types[state.alert].processInput(input);
     const alert = utils.makeAlert(types[state.alert]);
     const alertCol = document.createElement('div');
     alertCol.classList.add('col');
