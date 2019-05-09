@@ -6,10 +6,10 @@ import * as utils from './utils';
 
 export default () => {
   const state = {
-    alert: null,
-    urlStatus: 'init',
+    inputStatus: 'init',
     channels: {},
     feedLinks: [],
+    alert: null,
     previousActiveModal: null,
     currentActiveModal: null,
     renderType: null,
@@ -17,6 +17,62 @@ export default () => {
 
   const input = document.querySelector('input');
   const button = document.getElementById('searchButton');
+  const renderedItems = {};
+
+  const getFeed = (link, loadingType) => {
+    const methods = {
+      channelInit: {
+        proccessData: (items, name, description) => {
+          const feedItems = utils.processFeedItems(items);
+          state.channels = { ...state.channels, [name]: { feedItems, description } };
+        },
+        proccessState: () => {
+          state.inputStatus = 'init';
+          state.alert = null;
+          state.feedLinks.push(link);
+        },
+        proccessRenderigHistory: (name) => {
+          renderedItems[name] = [];
+        },
+      },
+      channelUpdate: {
+        proccessData: (items, name) => {
+          const newFeedItems = items.filter((item) => {
+            const title = item.querySelector('title').textContent;
+            const oldItems = state.channels[name].feedItems;
+            const newItem = _.find(oldItems, i => title === i.title);
+            return !newItem;
+          });
+          const proccessedItems = utils.processFeedItems(newFeedItems);
+          state.channels[name].feedItems = [...state.channels[name].feedItems, ...proccessedItems];
+        },
+        proccessState: () => {},
+        proccessRenderigHistory: () => {},
+      },
+    };
+
+    axios(`https://cors-anywhere.herokuapp.com/${link}`)
+      .then((response) => {
+        const feed = utils.parse(response.data);
+        if (!feed) {
+          state.alert = 'notRSS';
+          return;
+        }
+        const {
+          proccessState, proccessData, proccessRenderigHistory,
+        } = methods[loadingType];
+        const channelName = feed.querySelector('channel > title').textContent;
+        proccessState();
+
+        const description = feed.querySelector('description');
+        const feedItems = [...feed.querySelectorAll('item')];
+
+        proccessData(feedItems, channelName, description);
+        proccessRenderigHistory(channelName);
+        state.renderType = loadingType;
+      })
+      .then(() => setTimeout(() => getFeed(link, 'channelUpdate'), 5000));
+  };
 
   input.addEventListener('input', ({ target: { value } }) => {
     const statusDispatch = [
@@ -26,61 +82,34 @@ export default () => {
       },
       {
         check: inputValue => validator.isURL(inputValue),
-        currentStatus: 'valid',
+        currentStatus: 'urlValid',
       },
       {
         check: inputValue => !validator.isURL(inputValue),
-        currentStatus: 'invalid',
+        currentStatus: 'urlInvalid',
       },
     ];
 
-    state.urlStatus = _.find(statusDispatch, element => element.check(value)).currentStatus;
+    state.inputStatus = _.find(statusDispatch, element => element.check(value)).currentStatus;
   });
 
   button.addEventListener('click', () => {
-    if (state.urlStatus !== 'valid') {
+    if (state.inputStatus !== 'urlValid') {
       return;
     }
 
     const currentURL = input.value;
     if (state.feedLinks.includes(currentURL)) {
-      state.urlStatus = 'init';
       state.alert = 'URLDouble';
-      input.select();
       return;
     }
-
+    state.inputStatus = 'loading';
     state.alert = 'loading';
 
-    axios(`https://cors-anywhere.herokuapp.com/${currentURL}`)
-      .then((response) => {
-        state.urlStatus = 'init';
-        state.alert = null;
-        return response;
-      })
-      .then((response) => {
-        const parser = new DOMParser();
-        const feed = parser.parseFromString(response.data, 'application/xml').querySelector('rss');
-        if (!feed) {
-          state.alert = 'notRSS';
-          input.select();
-          return;
-        }
-
-        state.feedLinks.push(currentURL);
-        const channelName = feed.querySelector('channel > title').textContent;
-        const description = feed.querySelector('description');
-        const feedItems = [...feed.querySelectorAll('item')].map(item => ({
-          title: item.querySelector('title').textContent,
-          itemDescription: item.querySelector('description').textContent,
-          link: item.querySelector('link').textContent,
-        }));
-        state.channels = { ...state.channels, [channelName]: { feedItems, description } };
-        state.renderType = 'listInit';
-      });
+    getFeed(currentURL, 'channelInit');
   });
 
-  watch(state, 'urlStatus', () => utils.processInput(state.urlStatus)(input, button));
+  watch(state, 'inputStatus', () => utils.processInput(state.inputStatus)(input, button));
 
   watch(state, 'alert', () => {
     const currentAlert = document.getElementById('alert');
@@ -124,7 +153,7 @@ export default () => {
     const feedUl = document.getElementById('feed') || utils.createFeedUl();
 
     const methods = {
-      listInit: {
+      channelInit: {
         getChannel: (channelName, feed) => {
           if (document.getElementById(channelName)) {
             return null;
@@ -144,26 +173,30 @@ export default () => {
           input.value = '';
         },
       },
-      listUpdate: {
+      channelUpdate: {
         getChannel: channelName => document.getElementById(channelName),
         getFeedList: channelName => document.getElementById(channelName).querySelector('ul'),
         insert: (parent, child) => parent.prepend(child),
         updateInput: () => {},
       },
     };
+    const {
+      getChannel, getFeedList, insert, updateInput,
+    } = methods[state.renderType];
 
-    methods[state.renderType].updateInput();
+    updateInput();
 
     _.keys(state.channels).forEach((channelName) => {
       const feed = state.channels[channelName];
-      methods[state.renderType].getChannel(channelName, feed);
+      getChannel(channelName, feed);
 
-      const feedList = methods[state.renderType].getFeedList(channelName);
+      const feedList = getFeedList(channelName);
 
       feed.feedItems.forEach(({ title, link, itemDescription }) => {
-        if (document.getElementById(title)) {
+        if (renderedItems[channelName].includes(title)) {
           return;
         }
+        renderedItems[channelName].push(title);
         const aEl = document.createElement('a');
         aEl.href = link;
         aEl.append(document.createTextNode(title));
@@ -195,7 +228,7 @@ export default () => {
         li.append(row);
         li.append(modal);
         li.id = title;
-        methods[state.renderType].insert(feedList, li);
+        insert(feedList, li);
       });
     });
   });
@@ -223,36 +256,4 @@ export default () => {
     document.body.classList.add('modal-open');
     document.body.append(modalBackdrop);
   });
-
-  const checkForUpdates = () => {
-    state.feedLinks.forEach((link) => {
-      axios(`https://cors-anywhere.herokuapp.com/${link}`)
-        .then((response) => {
-          const parser = new DOMParser();
-          const feed = parser.parseFromString(response.data, 'application/xml');
-          const channelName = feed.querySelector('channel > title').textContent;
-          const newFeedItems = [...feed.querySelectorAll('item')]
-            .filter((item) => {
-              const title = item.querySelector('title').textContent;
-              const oldItems = state.channels[channelName].feedItems;
-              const newItem = _.find(oldItems, i => title === i.title);
-              return !newItem;
-            });
-
-          if (newFeedItems.length > 0) {
-            newFeedItems.forEach((item) => {
-              const processedItem = {
-                title: item.querySelector('title').textContent,
-                itemDescription: item.querySelector('description').textContent,
-                link: item.querySelector('link').textContent,
-              };
-              state.channels[channelName].feedItems.push(processedItem);
-            });
-            state.renderType = 'listUpdate';
-          }
-        });
-    });
-  };
-
-  setInterval(checkForUpdates, 5000);
 };

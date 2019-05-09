@@ -1,24 +1,41 @@
 export const processInput = (urlStatus) => {
   const processors = {
-    invalid: (inputElement, buttonElement) => {
-      buttonElement.classList.toggle('disabled', true);
-      inputElement.classList.toggle('border-succes', false);
-      inputElement.classList.add('border-danger');
-    },
-    valid: (inputElement, buttonElement) => {
-      buttonElement.classList.toggle('disabled', false);
-      inputElement.classList.toggle('border-danger', false);
-      inputElement.classList.add('border-success');
-    },
     init: (inputElement, buttonElement) => {
       buttonElement.classList.toggle('disabled', true);
       inputElement.classList.toggle('border-danger', false);
       inputElement.classList.toggle('border-success', false);
+      inputElement.removeAttribute('disabled');
+    },
+    urlInvalid: (inputElement, buttonElement) => {
+      buttonElement.classList.toggle('disabled', true);
+      inputElement.classList.toggle('border-succes', false);
+      inputElement.classList.add('border-danger');
+    },
+    urlValid: (inputElement, buttonElement) => {
+      buttonElement.classList.toggle('disabled', false);
+      inputElement.classList.toggle('border-danger', false);
+      inputElement.classList.add('border-success');
+    },
+    loading: (inputElement, buttonElement) => {
+      buttonElement.classList.toggle('disabled', true);
+      inputElement.setAttribute('disabled', true);
     },
   };
 
   return processors[urlStatus];
 };
+
+export const parse = (data) => {
+  const parser = new DOMParser();
+  const feed = parser.parseFromString(data, 'application/xml').querySelector('rss');
+  return feed;
+};
+
+export const processFeedItems = feedItems => feedItems.map(item => ({
+  title: item.querySelector('title').textContent,
+  itemDescription: item.querySelector('description').textContent,
+  link: item.querySelector('link').textContent,
+}));
 
 export const makeAlert = ({ message, className }) => {
   const textNode = document.createTextNode(message);
