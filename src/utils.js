@@ -37,7 +37,7 @@ export const processFeedItems = feedItems => feedItems.map(item => ({
   link: item.querySelector('link').textContent,
 }));
 
-export const makeAlert = ({ message, className }) => {
+export const makeAlert = (message, className) => {
   const textNode = document.createTextNode(message);
   const alertDiv = document.createElement('div');
   alertDiv.classList.add('alert', className);

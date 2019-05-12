@@ -54,7 +54,7 @@ export default () => {
     axios(`https://cors-anywhere.herokuapp.com/${link}`)
       .then((response) => {
         const feed = utils.parse(response.data);
-        if (!feed) {
+        if (loadingType === 'channelInit' && !feed) {
           state.inputStatus = 'init';
           state.alert = 'notRSS';
           return;
@@ -123,7 +123,7 @@ export default () => {
       return;
     }
 
-    const types = {
+    const alertTypesData = {
       URLDouble: {
         message: 'Seems like you already have chis channel',
         className: 'alert-danger',
@@ -141,8 +141,12 @@ export default () => {
       },
     };
 
-    types[state.alert].processInput(input);
-    const alert = utils.makeAlert(types[state.alert]);
+    const {
+      processInput, message, className,
+    } = alertTypesData[state.alert];
+
+    processInput(input);
+    const alert = utils.makeAlert(message, className);
     const alertCol = document.createElement('div');
     alertCol.classList.add('col');
     alertCol.append(alert);
