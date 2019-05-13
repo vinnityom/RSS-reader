@@ -52,11 +52,10 @@ export default () => {
     axios(`https://cors-anywhere.herokuapp.com/${link}`)
       .then((response) => {
         try {
-          const feed = parse(response.data);
           const {
             proccessState, proccessData, proccessRenderigHistory,
           } = methods[loadingType];
-          const { channelName, content: { feedItems, description } } = feed;
+          const { channelName, content: { feedItems, description } } = parse(response.data);
           proccessState(link);
 
           proccessData(feedItems, channelName, description);
