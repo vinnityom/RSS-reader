@@ -42,7 +42,7 @@ export default () => {
             const newItem = _.find(oldItems, i => title === i.title);
             return !newItem;
           });
-          state.channels[name].feedItems = [...state.channels[name].feedItems, ...newFeedItems];
+          state.channels[name].feedItems = [...newFeedItems, ...state.channels[name].feedItems];
         },
         proccessState: () => {},
         proccessRenderigHistory: () => {},
@@ -158,48 +158,38 @@ export default () => {
     const methods = {
       channelInit: {
         getChannel: (channelName, feed) => {
-          if (document.getElementById(channelName)) {
-            return null;
-          }
           const channel = view.createChannel(channelName, feed);
           feedUl.prepend(channel);
           return channel;
         },
-        getFeedList: (channelName) => {
-          const feedList = document.createElement('ul');
-          feedList.classList.add('list-group');
-          document.getElementById(channelName).append(feedList);
-          return feedList;
-        },
-        insert: (parent, child) => parent.append(child),
         updateInput: () => {
           input.value = '';
         },
       },
       channelUpdate: {
-        getChannel: channelName => document.getElementById(channelName),
-        getFeedList: channelName => document.getElementById(channelName).querySelector('ul'),
-        insert: (parent, child) => parent.prepend(child),
+        getChannel: (channelName, feed) => {
+          document.getElementById(channelName).remove();
+          const channel = view.createChannel(channelName, feed);
+          feedUl.prepend(channel);
+          return channel;
+        },
         updateInput: () => {},
       },
     };
-    const {
-      getChannel, getFeedList, insert, updateInput,
-    } = methods[state.renderType];
+    const { getChannel, updateInput } = methods[state.renderType];
 
     updateInput();
 
     _.keys(state.channels).forEach((channelName) => {
       const feed = state.channels[channelName];
-      getChannel(channelName, feed);
 
-      const feedList = getFeedList(channelName);
+      const channel = getChannel(channelName, feed);
+
+      const feedList = document.createElement('ul');
+      feedList.classList.add('list-group');
+      channel.append(feedList);
 
       feed.feedItems.forEach(({ title, link, itemDescription }) => {
-        if (renderedItems[channelName].includes(title)) {
-          return;
-        }
-        renderedItems[channelName].push(title);
         const aEl = document.createElement('a');
         aEl.href = link;
         aEl.append(document.createTextNode(title));
@@ -231,7 +221,7 @@ export default () => {
         li.append(row);
         li.append(modal);
         li.id = title;
-        insert(feedList, li);
+        feedList.append(li);
       });
     });
   });
