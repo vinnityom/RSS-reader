@@ -155,35 +155,18 @@ export default () => {
   watch(state, 'channels', () => {
     const feedUl = document.getElementById('feed') || view.createFeedUl();
 
-    const methods = {
-      channelInit: {
-        getChannel: (channelName, feed) => {
-          const channel = view.createChannel(channelName, feed);
-          feedUl.prepend(channel);
-          return channel;
-        },
-        updateInput: () => {
-          input.value = '';
-        },
-      },
-      channelUpdate: {
-        getChannel: (channelName, feed) => {
-          document.getElementById(channelName).remove();
-          const channel = view.createChannel(channelName, feed);
-          feedUl.prepend(channel);
-          return channel;
-        },
-        updateInput: () => {},
-      },
-    };
-    const { getChannel, updateInput } = methods[state.renderType];
-
-    updateInput();
+    if (state.renderType === 'channelInit') {
+      input.value = '';
+    }
 
     _.keys(state.channels).forEach((channelName) => {
       const feed = state.channels[channelName];
+      if (state.renderType === 'channelUpdate') {
+        document.getElementById(channelName).remove();
+      }
 
-      const channel = getChannel(channelName, feed);
+      const channel = view.createChannel(channelName, feed);
+      feedUl.prepend(channel);
 
       const feedList = document.createElement('ul');
       feedList.classList.add('list-group');
