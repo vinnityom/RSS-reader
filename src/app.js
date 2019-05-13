@@ -22,14 +22,13 @@ export default () => {
   const getFeed = (link, loadingType) => {
     const methods = {
       channelInit: {
-        proccessData: (items, name, description) => {
-          const feedItems = utils.processFeedItems(items);
+        proccessData: (feedItems, name, description) => {
           state.channels = { ...state.channels, [name]: { feedItems, description } };
         },
-        proccessState: () => {
+        proccessState: (url) => {
           state.inputStatus = 'init';
           state.alert = null;
-          state.feedLinks.push(link);
+          state.feedLinks.push(url);
         },
         proccessRenderigHistory: (name) => {
           renderedItems[name] = [];
@@ -37,14 +36,12 @@ export default () => {
       },
       channelUpdate: {
         proccessData: (items, name) => {
-          const newFeedItems = items.filter((item) => {
-            const title = item.querySelector('title').textContent;
+          const newFeedItems = items.filter(({ title }) => {
             const oldItems = state.channels[name].feedItems;
             const newItem = _.find(oldItems, i => title === i.title);
             return !newItem;
           });
-          const proccessedItems = utils.processFeedItems(newFeedItems);
-          state.channels[name].feedItems = [...state.channels[name].feedItems, ...proccessedItems];
+          state.channels[name].feedItems = [...state.channels[name].feedItems, ...newFeedItems];
         },
         proccessState: () => {},
         proccessRenderigHistory: () => {},
@@ -53,26 +50,23 @@ export default () => {
 
     axios(`https://cors-anywhere.herokuapp.com/${link}`)
       .then((response) => {
-        const feed = utils.parse(response.data);
-        if (loadingType === 'channelInit' && !feed) {
+        try {
+          const feed = utils.parse(response.data);
+          const {
+            proccessState, proccessData, proccessRenderigHistory,
+          } = methods[loadingType];
+          const { channelName, content: { feedItems, description } } = feed;
+          proccessState(link);
+
+          proccessData(feedItems, channelName, description);
+          proccessRenderigHistory(channelName);
+          state.renderType = loadingType;
+          setTimeout(() => getFeed(link, 'channelUpdate'), 5000);
+        } catch (error) {
           state.inputStatus = 'init';
-          state.alert = 'notRSS';
-          return;
+          state.alert = error.message;
         }
-        const {
-          proccessState, proccessData, proccessRenderigHistory,
-        } = methods[loadingType];
-        const channelName = feed.querySelector('channel > title').textContent;
-        proccessState();
-
-        const description = feed.querySelector('description');
-        const feedItems = [...feed.querySelectorAll('item')];
-
-        proccessData(feedItems, channelName, description);
-        proccessRenderigHistory(channelName);
-        state.renderType = loadingType;
-      })
-      .then(() => setTimeout(() => getFeed(link, 'channelUpdate'), 5000));
+      });
   };
 
   input.addEventListener('input', ({ target: { value } }) => {
