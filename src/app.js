@@ -18,7 +18,6 @@ export default () => {
 
   const input = document.querySelector('input');
   const button = document.getElementById('searchButton');
-  const renderedItems = {};
 
   const getFeed = (link, loadingType) => {
     const methods = {
@@ -31,9 +30,6 @@ export default () => {
           state.alert = null;
           state.feedLinks.push(url);
         },
-        proccessRenderigHistory: (name) => {
-          renderedItems[name] = [];
-        },
       },
       channelUpdate: {
         proccessData: (items, name) => {
@@ -45,7 +41,6 @@ export default () => {
           state.channels[name].feedItems = [...newFeedItems, ...state.channels[name].feedItems];
         },
         proccessState: () => {},
-        proccessRenderigHistory: () => {},
       },
     };
 
@@ -53,13 +48,12 @@ export default () => {
       .then((response) => {
         try {
           const {
-            proccessState, proccessData, proccessRenderigHistory,
+            proccessState, proccessData,
           } = methods[loadingType];
           const { channelName, content: { feedItems, description } } = parse(response.data);
           proccessState(link);
 
           proccessData(feedItems, channelName, description);
-          proccessRenderigHistory(channelName);
           state.renderType = loadingType;
           setTimeout(() => getFeed(link, 'channelUpdate'), 5000);
         } catch (error) {
