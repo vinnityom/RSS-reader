@@ -2,7 +2,8 @@ import validator from 'validator';
 import { watch } from 'melanke-watchjs';
 import axios from 'axios';
 import _ from 'lodash';
-import * as utils from './utils';
+import * as view from './view';
+import parse from './parser';
 
 export default () => {
   const state = {
@@ -51,7 +52,7 @@ export default () => {
     axios(`https://cors-anywhere.herokuapp.com/${link}`)
       .then((response) => {
         try {
-          const feed = utils.parse(response.data);
+          const feed = parse(response.data);
           const {
             proccessState, proccessData, proccessRenderigHistory,
           } = methods[loadingType];
@@ -104,7 +105,7 @@ export default () => {
     getFeed(currentURL, 'channelInit');
   });
 
-  watch(state, 'inputStatus', () => utils.processInput(state.inputStatus)(input, button));
+  watch(state, 'inputStatus', () => view.processInput(state.inputStatus)(input, button));
 
   watch(state, 'alert', () => {
     const currentAlert = document.getElementById('alert');
@@ -140,7 +141,7 @@ export default () => {
     } = alertTypesData[state.alert];
 
     processInput(input);
-    const alert = utils.makeAlert(message, className);
+    const alert = view.makeAlert(message, className);
     const alertCol = document.createElement('div');
     alertCol.classList.add('col');
     alertCol.append(alert);
@@ -153,7 +154,7 @@ export default () => {
   });
 
   watch(state, 'channels', () => {
-    const feedUl = document.getElementById('feed') || utils.createFeedUl();
+    const feedUl = document.getElementById('feed') || view.createFeedUl();
 
     const methods = {
       channelInit: {
@@ -161,7 +162,7 @@ export default () => {
           if (document.getElementById(channelName)) {
             return null;
           }
-          const channel = utils.createChannel(channelName, feed);
+          const channel = view.createChannel(channelName, feed);
           feedUl.prepend(channel);
           return channel;
         },
@@ -207,13 +208,13 @@ export default () => {
         aCol.classList.add('col');
         aCol.append(aEl);
 
-        const modal = utils.createModalElement(title, itemDescription);
+        const modal = view.createModalElement(title, itemDescription);
         modal.querySelector('.close').addEventListener('click', () => {
           state.previousActiveModal = state.currentActiveModal;
           state.currentActiveModal = null;
         });
 
-        const descriptionButton = utils.createDescriptionButton(title, state);
+        const descriptionButton = view.createDescriptionButton(title, state);
         descriptionButton.addEventListener('click', ({ target }) => {
           state.currentActiveModal = target.dataset.target;
         });
