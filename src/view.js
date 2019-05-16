@@ -48,11 +48,9 @@ export const createFeedUl = () => {
   return feedUl;
 };
 
-export const createDescriptionButton = (modalId) => {
+export const createDescriptionButton = () => {
   const button = document.createElement('button');
   button.classList.add('btn', 'btn-primary', 'btn-sm');
-  button.dataset.toggle = 'modal';
-  button.dataset.target = `#${modalId}Modal`;
   const textNode = document.createTextNode('description');
   button.append(textNode);
 
@@ -98,7 +96,7 @@ export const createModalElement = (title, description) => {
 
   const modal = document.createElement('div');
   modal.classList.add('modal', 'fade');
-  modal.id = `${title}Modal`;
+  modal.id = 'modal';
   modal.setAttribute('tab-index', '-1');
   modal.setAttribute('aria-labelledby', `${title}Label`);
   modal.setAttribute('aria-hidden', 'true');

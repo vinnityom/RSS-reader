@@ -11,8 +11,7 @@ export default () => {
     channels: {},
     feedLinks: [],
     alert: null,
-    previousActiveModal: null,
-    currentActiveModal: null,
+    activeModal: null,
     renderType: null,
   };
 
@@ -174,15 +173,9 @@ export default () => {
         aCol.classList.add('col');
         aCol.append(aEl);
 
-        const modal = view.createModalElement(title, itemDescription);
-        modal.querySelector('.close').addEventListener('click', () => {
-          state.previousActiveModal = state.currentActiveModal;
-          state.currentActiveModal = null;
-        });
-
-        const descriptionButton = view.createDescriptionButton(title, state);
-        descriptionButton.addEventListener('click', ({ target }) => {
-          state.currentActiveModal = target.dataset.target;
+        const descriptionButton = view.createDescriptionButton();
+        descriptionButton.addEventListener('click', () => {
+          state.activeModal = { title, itemDescription };
         });
 
         const descriptionButtonCol = document.createElement('div');
@@ -196,29 +189,31 @@ export default () => {
         const li = document.createElement('li');
         li.classList.add('list-group-item');
         li.append(row);
-        li.append(modal);
         li.id = title;
         feedList.append(li);
       });
     });
   });
 
-  watch(state, 'currentActiveModal', () => {
-    if (!state.currentActiveModal) {
-      const modalToClose = document.getElementById(state.previousActiveModal.slice(1));
-      modalToClose.classList.remove('show');
-      modalToClose.setAttribute('aria-hidden', 'true');
-      modalToClose.removeAttribute('style');
-
+  watch(state, 'activeModal', () => {
+    if (!state.activeModal) {
+      document.getElementById('modal').remove();
       document.querySelector('.modal-backdrop').remove();
       document.body.classList.remove('modal-open');
+
       return;
     }
 
-    const modalToShow = document.getElementById(state.currentActiveModal.slice(1));
+    const { title, itemDescription } = state.activeModal;
+
+    const modalToShow = view.createModalElement(title, itemDescription);
+    modalToShow.querySelector('.close').addEventListener('click', () => {
+      state.activeModal = null;
+    });
     modalToShow.classList.add('show');
     modalToShow.removeAttribute('aria-hidden');
     modalToShow.setAttribute('style', 'display: block');
+    document.body.append(modalToShow);
 
     const modalBackdrop = document.createElement('div');
     modalBackdrop.classList.add('modal-backdrop', 'fade', 'show');
